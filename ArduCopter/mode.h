@@ -1239,3 +1239,30 @@ protected:
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
+
+
+class ModeRoverManual : public Mode {
+
+public:
+
+    // inherit constructor
+    using Copter::Mode::Mode;
+
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+
+    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
+
+protected:
+
+    const char *name() const override { return "ROVER-MANUAL"; }
+    const char *name4() const override { return "FOMA"; }
+};
+
+

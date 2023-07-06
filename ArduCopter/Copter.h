@@ -54,6 +54,7 @@
 #include <AC_PID/AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
+#include <APM_Control/AR_AttitudeControl.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
@@ -83,6 +84,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
+#include "AP_MotorsUGV.h"
 
 // Configuration
 #include "defines.h"
@@ -200,6 +202,18 @@ public:
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+    enum TILT_TYPE{
+        TILT_TYPE_DISABLE = 0,
+        TILT_TYPE_UP = 1,
+        TILT_TYPE_DOWN = 2,
+    } ;
+
+    void set_tilt_type(TILT_TYPE type)
+    {
+        tilt.tilt_type = type;
+    }
+
+
 
 private:
     static const AP_FWVersion fwver;
@@ -251,6 +265,18 @@ private:
 #if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
 #endif
+    // tiltrotor control variables
+    struct {
+        TILT_TYPE tilt_type; // 0 : disable ,1 : up ,2 : down
+        int8_t max_rate_up_dps;
+        int8_t max_rate_down_dps;
+        int8_t  max_angle_deg;
+        int8_t  min_angle_deg;
+        float current_tilt;
+    } tilt = {TILT_TYPE_DISABLE, 1, 1, 90, 0, 0.0};
+    void tiltrotor_slew(float newtilt);
+    void update_tilt();
+    
 
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
@@ -489,6 +515,7 @@ private:
     #define AC_AttitudeControl_t AC_AttitudeControl_Heli
 #else
     #define AC_AttitudeControl_t AC_AttitudeControl_Multi
+    #define AC_AttitudeControlRover_t AR_AttitudeControl
 #endif
     AC_AttitudeControl_t *attitude_control;
     AC_PosControl *pos_control;
@@ -1009,6 +1036,8 @@ private:
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ModeFlowHold mode_flowhold;
 #endif
+    ModeRoverManual mode_rover_manual;
+
 
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);

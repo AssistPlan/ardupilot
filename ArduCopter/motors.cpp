@@ -297,6 +297,8 @@ void Copter::init_disarm_motors()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Copter::motors_output()
 {
+    bool done;
+    done = false;
 #if ADVANCED_FAILSAFE == ENABLED
     // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
@@ -325,19 +327,33 @@ void Copter::motors_output()
     if (ap.motor_test) {
         motor_test_output();
     } else {
-        bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
-        if (!motors->get_interlock() && interlock) {
-            motors->set_interlock(true);
-            Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
-        } else if (motors->get_interlock() && !interlock) {
-            motors->set_interlock(false);
-            Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+
+        if(control_mode == ROVER_MANUAL)
+        {
+            // send output signals to motors
+            float speed;
+            g2.attitude_control_rover.get_forward_speed(speed);
+            //speed = 2.0;
+            g2.ugv_motors.output(true, speed, G_Dt);
+//printf("g2.ugv_motors.output speed=%f\n", speed );
+            done = true;
         }
+        if(done == false)
+        {
 
-        // send output signals to motors
-        motors->output();
+            bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
+            if (!motors->get_interlock() && interlock) {
+                motors->set_interlock(true);
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
+            } else if (motors->get_interlock() && !interlock) {
+                motors->set_interlock(false);
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+            }
+
+            // send output signals to motors
+            motors->output();
+        }
     }
-
     // push all channels
     SRV_Channels::push();
 }

@@ -1,0 +1,5 @@
+--- modules/ChibiOS
++++ modules/ChibiOS
+@@ -1 +1 @@
+-Subproject commit d2030d8893f932f1a062afbd925124756a1c094e
++Subproject commit d2030d8893f932f1a062afbd925124756a1c094e-dirty

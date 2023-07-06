@@ -586,6 +586,8 @@ public:
     // follow
     AP_Follow follow;
 #endif
+    AP_MotorsUGV ugv_motors;
+    AR_AttitudeControl attitude_control_rover;
 
 };
 

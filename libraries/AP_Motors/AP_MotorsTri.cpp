@@ -41,15 +41,18 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     motor_enabled[AP_MOTORS_MOT_4] = true;
 
     // find the yaw servo
-    _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, AP_MOTORS_CH_TRI_YAW);
+//    _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, AP_MOTORS_CH_TRI_YAW);
+    _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, AP_MOTORS_CH_TRI_YAW);
     if (!_yaw_servo) {
         gcs().send_text(MAV_SEVERITY_ERROR, "MotorsTri: unable to setup yaw channel");
         // don't set initialised_ok
         return;
     }
     
-    // allow mapping of motor7
+    // allow mapping of motor7 ->> morot3
     add_motor_num(AP_MOTORS_CH_TRI_YAW);
+    //add_motor_num(AP_MOTORS_MOT_3);  // steering
+    //add_motor_num(AP_MOTORS_MOT_5);
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
@@ -75,6 +78,7 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
     rc_set_freq(mask, _speed_hz);
 }
 
+
 void AP_MotorsTri::output_to_motors()
 {
     switch (_spool_mode) {
@@ -82,14 +86,18 @@ void AP_MotorsTri::output_to_motors()
             // sends minimum values out to the motors
             rc_write(AP_MOTORS_MOT_1, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_2, get_pwm_output_min());
+//            rc_write(AP_MOTORS_MOT_3, (get_pwm_output_min() + get_pwm_output_max()) / 2);
             rc_write(AP_MOTORS_MOT_4, get_pwm_output_min());
+//            rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             rc_write(AP_MOTORS_MOT_1, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_2, calc_spin_up_to_pwm());
+//            rc_write(AP_MOTORS_MOT_3, (get_pwm_output_min() + get_pwm_output_max()) / 2);
             rc_write(AP_MOTORS_MOT_4, calc_spin_up_to_pwm());
+//            rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
         case SPOOL_UP:
@@ -98,7 +106,9 @@ void AP_MotorsTri::output_to_motors()
             // set motor output based on thrust requests
             rc_write(AP_MOTORS_MOT_1, calc_thrust_to_pwm(_thrust_right));
             rc_write(AP_MOTORS_MOT_2, calc_thrust_to_pwm(_thrust_left));
+//            rc_write(AP_MOTORS_MOT_3, (get_pwm_output_min() + get_pwm_output_max()) / 2);
             rc_write(AP_MOTORS_MOT_4, calc_thrust_to_pwm(_thrust_rear));
+//            rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg)));
             break;
     }
@@ -111,7 +121,9 @@ uint16_t AP_MotorsTri::get_motor_mask()
     // tri copter uses channels 1,2,4 and 7
     uint16_t motor_mask = (1U << AP_MOTORS_MOT_1) |
                           (1U << AP_MOTORS_MOT_2) |
+//                          (1U << AP_MOTORS_MOT_3) |
                           (1U << AP_MOTORS_MOT_4) |
+                          (1U << AP_MOTORS_MOT_5) |
                           (1U << AP_MOTORS_CH_TRI_YAW);
     uint16_t mask = rc_map_mask(motor_mask);
 

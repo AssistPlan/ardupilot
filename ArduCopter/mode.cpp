@@ -154,6 +154,10 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_follow;
             break;
 #endif
+        case ROVER_MANUAL:
+            ret = &mode_rover_manual;
+            break;
+ 
 
         default:
             break;
@@ -260,6 +264,16 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
         mode_autotune.stop();
     }
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if ((new_flightmode != &mode_auto) && (new_flightmode != &mode_rover_manual)){
+        copter.sitl.set_sitl_rover_model(false);
+    }
+#endif
+
+    if ((new_flightmode != &mode_auto) && (new_flightmode != &mode_rover_manual)){
+printf("exit_mode \n");
+        copter.set_tilt_type(TILT_TYPE_DOWN); 
+    }
 
     // stop mission when we leave auto mode
 #if MODE_AUTO_ENABLED == ENABLED

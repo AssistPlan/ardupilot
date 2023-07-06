@@ -291,6 +291,18 @@ void SITL_State::_fdm_input_local(void)
 
     // get FDM output from the model
     if (_sitl) {
+
+//printf("rover_mode[%d]\n", _sitl->rover_mode);
+        if(_sitl->rover_mode == true)
+        {
+            //sitl_model->set_ground_behavior( SITL::Aircraft::GROUND_BEHAVIOR_FWD_ONLY );
+            sitl_model->set_rover_mode( true );
+        } else {
+            //sitl_model->set_ground_behavior( SITL::Aircraft::GROUND_BEHAVIOR_FWD_ONLY );
+            sitl_model->set_rover_mode( false );
+        }
+
+
         sitl_model->fill_fdm(_sitl->state);
         _sitl->update_rate_hz = sitl_model->get_rate_hz();
 

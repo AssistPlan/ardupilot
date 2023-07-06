@@ -9,6 +9,7 @@
 // this avoids a very common config error
 #define ENABLE ENABLED
 #define DISABLE DISABLED
+#define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {
@@ -113,6 +114,8 @@ enum control_mode_t {
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
     FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
+    ZIGZAG    =    24,  // rover-mode manual
+    ROVER_MANUAL =    25,  // rover-mode manual
 };
 
 enum mode_reason_t {

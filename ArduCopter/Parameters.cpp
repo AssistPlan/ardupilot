@@ -985,6 +985,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
 #endif
+    // @Group: UGV_
+    // @Path: AP_MotorsUGV.cpp
+    AP_SUBGROUPINFO(ugv_motors, "UGV_", 28, ParametersG2, AP_MotorsUGV),
+
+    // @Group: ARC_
+    // @Path: ../libraries/APM_Control/AR_AttitudeControl.cpp
+    AP_SUBGROUPINFO(attitude_control_rover, "ACR", 29, ParametersG2, AR_AttitudeControl),
+
+
 
     AP_GROUPEND
 };
@@ -1013,6 +1022,9 @@ ParametersG2::ParametersG2(void)
 #if MODE_FOLLOW_ENABLED == ENABLED
     ,follow()
 #endif
+    ,ugv_motors()
+    ,attitude_control_rover(copter.ahrs)
+
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

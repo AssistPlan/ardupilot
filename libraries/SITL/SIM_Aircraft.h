@@ -120,11 +120,16 @@ public:
     void get_attitude(Quaternion &attitude) const {
         attitude.from_rotation_matrix(dcm);
     }
+    void set_rover_mode (bool mode) {
+        rover_mode = mode;
+    }
+
 
 protected:
     SITL *sitl;
     Location home;
     Location location;
+    bool rover_mode;
 
     float ground_level;
     float home_yaw;
