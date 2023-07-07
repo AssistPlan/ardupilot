@@ -202,6 +202,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     float Nu;
     float xtrackVel;
     float ltrackVel;
+    float _L1_xtrack_gain;
+
+    _L1_xtrack_gain = 1;
 
     uint32_t now = AP_HAL::micros();
     float dt = (now - _last_update_waypoint_us) * 1.0e-6f;
@@ -240,6 +243,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     // 0.3183099 = 1/1/pipi
     _L1_dist = MAX(0.3183099f * _L1_damping * _L1_period * groundSpeed, dist_min);
 
+//printf("_L1_damping=%f, _L1_period=%f, groundSpeed=%f, dist_min=%f\n", _L1_damping.get(), _L1_period.get(), groundSpeed, dist_min);
+
     // Calculate the NE position of WP B relative to WP A
     Vector2f AB = location_diff(prev_WP, next_WP);
     float AB_length = AB.length();
@@ -253,12 +258,19 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         }
     }
     AB.normalize();
+//printf("prev_WP.lat=%d, prev_WP.lng=%d\n", prev_WP.lat ,prev_WP.lng );
+//printf("next_WP.lat=%d, next_WP.lng=%d\n", next_WP.lat ,next_WP.lng );
+//printf("current.lat=%d, current.lng=%d\n", _current_loc.lat ,_current_loc.lng );
 
     // Calculate the NE position of the aircraft relative to WP A
     Vector2f A_air = location_diff(prev_WP, _current_loc);
 
     // calculate distance to target track, for reporting
     _crosstrack_error = A_air % AB;
+
+//printf("_crosstrack_error=%f, groundSpeed=%f\n", _crosstrack_error, groundSpeed);
+//printf("A_air.x=%f, A_air.y=%f\n", A_air.x, A_air.y);
+//printf("AB.x=%f, AB.y=%f\n", AB.x, AB.y);
 
     //Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
     //and further than L1 distance from WP A. Then use WP A as the L1 reference point
@@ -289,7 +301,10 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         ltrackVel = _groundspeed_vector * AB; // Velocity along track
         float Nu2 = atan2f(xtrackVel,ltrackVel);
         //Calculate Nu1 angle (Angle to L1 reference point)
-        float sine_Nu1 = _crosstrack_error/MAX(_L1_dist, 0.1f);
+        //float sine_Nu1 = _crosstrack_error/MAX(_L1_dist, 0.1f);
+        // speed = 1m/s _L1_xtrack_gain=40, speed = 3m/s _L1_xtrack_gain=2 period = 1
+        float sine_Nu1 = _L1_xtrack_gain * _crosstrack_error/MAX(_L1_dist, 0.1f);
+
         //Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
         sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
         float Nu1 = asinf(sine_Nu1);
@@ -309,17 +324,20 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 
         // to converge to zero we must push Nu1 harder
         Nu1 += _L1_xtrack_i;
-
+//printf("Nu1=%f, Nu2=%f\n", Nu1, Nu2);
         Nu = Nu1 + Nu2;
         _nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point
     }
 
+    //Nu = Nu + 0.05;
     _prevent_indecision(Nu);
     _last_Nu = Nu;
 
     //Limit Nu to +-(pi/2)
     Nu = constrain_float(Nu, -1.5708f, +1.5708f);
     _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
+
+//printf("_L1_dist=%f, K_L1=%f,_latAcc=%f\n", _L1_dist,K_L1,_latAccDem);
 
     // Waypoint capture status is always false during waypoint following
     _WPcircle = false;

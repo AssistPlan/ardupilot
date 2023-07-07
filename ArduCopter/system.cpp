@@ -23,6 +23,8 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
+    set_not_dis_arm_on_land(false);
+
     // init vehicle capabilties
     init_capabilities();
 
@@ -526,6 +528,9 @@ void Copter::allocate_motors(void)
             motors = new AP_MotorsTri(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
+            rover_motors = new AP_RoverMotors(copter.scheduler.get_loop_rate_hz());
+            //ugv_motors = new AP_MotorsUGV();
+
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = new AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());

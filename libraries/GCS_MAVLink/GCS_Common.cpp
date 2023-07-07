@@ -578,6 +578,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     mavlink_mission_write_partial_list_t packet;
     mavlink_msg_mission_write_partial_list_decode(msg, &packet);
 
+
     // start waypoint receiving
     if ((unsigned)packet.start_index > mission.num_commands() ||
         (unsigned)packet.end_index > mission.num_commands() ||
@@ -665,7 +666,9 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     bool mission_is_complete = false;
     uint16_t seq=0;
     uint16_t current = 0;
-    
+ 
+
+   
     if (msg->msgid == MAVLINK_MSG_ID_MISSION_ITEM) {      
         mavlink_mission_item_t packet;    
         mavlink_msg_mission_item_decode(msg, &packet);

@@ -461,6 +461,9 @@ void Aircraft::set_speedup(float speedup)
  */
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
+
+//printf("update_dynamicsx[%f][%f]\n", rot_accel.x, rot_accel.y);
+
     const float delta_time = frame_time_us * 1.0e-6f;
 
     // update rotational rates in body frame
@@ -514,7 +517,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     // constrain height to the ground
     if (on_ground()) {
         if (!was_on_ground && AP_HAL::millis() - last_ground_contact_ms > 1000) {
-            printf("Hit ground at %f m/s\n", velocity_ef.z);
+           // printf("Hit ground at %f m/s\n", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
         }
         position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());

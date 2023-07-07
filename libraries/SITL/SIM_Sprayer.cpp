@@ -57,10 +57,10 @@ void Sprayer::update(const Aircraft::sitl_input &input)
     }
 
     if (should_report()) {
-        printf("Remaining: %f litres\n", capacity);
-        printf("Pump: %f l/s\n", last_pump_output * pump_max_rate);
+        //printf("Remaining: %f litres\n", capacity);
+        //printf("Pump: %f l/s\n", last_pump_output * pump_max_rate);
         if (spinner_servo >= 0) {
-            printf("Spinner: %f rev/s\n", (last_spinner_output * spinner_max_rate)/360.0f);
+            //printf("Spinner: %f rev/s\n", (last_spinner_output * spinner_max_rate)/360.0f);
         }
         last_report_us = now;
     }

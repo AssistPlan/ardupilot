@@ -15,11 +15,11 @@
 #define AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX   80  // maximum angle movement of tail servo in degrees
 
 /// @class      AP_MotorsTri
-class AP_MotorsTri : public AP_MotorsMulticopter {
+class AP_RoverMotors : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsTri(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+    AP_RoverMotors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(loop_rate, speed_hz)
     {
     };
@@ -38,8 +38,11 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm);
 
+    // output - sends
+    void        output() override;
+
     // output_to_motors - sends minimum values out to the motors
-    virtual void        output_to_motors();
+    void        output_to_motors() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -49,10 +52,20 @@ public:
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
     void                output_motor_mask(float thrust, uint8_t mask) override;
-    
+
+    void set_thrust_rear(float thrust){_thrust_rear = thrust; 
+};
+    void set_thrust_staring(float thrust){_thrust_staring = thrust; 
+};
+    float           _thrust_rear;
+    float           _thrust_staring;
+    void set_spool_mode(spool_up_down_mode mode){
+        _spool_mode = mode;
+    }
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
+    int16_t calc_thrust_to_pwm(float thrust_in) const;
 
     // call vehicle supplied thrust compensation if set
     void                thrust_compensation(void) override;
@@ -65,6 +78,6 @@ protected:
     SRV_Channel     *_yaw_servo; // yaw output channel
     float           _pivot_angle;                       // Angle of yaw pivot
     float           _thrust_right;
-    float           _thrust_rear;
+//    float           _thrust_rear;
     float           _thrust_left;
 };

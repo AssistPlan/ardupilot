@@ -111,7 +111,10 @@ static Motor tri_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
     Motor(AP_MOTORS_MOT_2,  -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, AP_MOTORS_MOT_7, 60, -60, -1, 0, 0),
+    Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, 
+    AP_MOTORS_MOT_3, 60, -60, -1, 0, 0),
+    //Motor(AP_MOTORS_MOT_4,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2, 
+    //AP_MOTORS_MOT_7, 60, -60, -1, 0, 0),
 };
 
 static Motor tilttri_motors[] =

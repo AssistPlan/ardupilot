@@ -53,15 +53,19 @@ void Copter::init_rc_out()
 {
     motors->set_loop_rate(scheduler.get_loop_rate_hz());
     motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
+    rover_motors->set_loop_rate(scheduler.get_loop_rate_hz());
+    rover_motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 
     // enable aux servos to cope with multiple output channels per motor
     SRV_Channels::enable_aux_servos();
 
     // update rate must be set after motors->init() to allow for motor mapping
     motors->set_update_rate(g.rc_speed);
+    rover_motors->set_update_rate(g.rc_speed);
 
 #if FRAME_CONFIG != HELI_FRAME
     motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    rover_motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #else
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed.

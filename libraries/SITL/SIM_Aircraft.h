@@ -120,11 +120,25 @@ public:
     void get_attitude(Quaternion &attitude) const {
         attitude.from_rotation_matrix(dcm);
     }
+    enum ground_behavior_ {
+        GROUND_BEHAVIOR_NONE = 0,
+        GROUND_BEHAVIOR_NO_MOVEMENT,
+        GROUND_BEHAVIOR_FWD_ONLY,
+        GROUND_BEHAVIOR_TAILSITTER,
+    } ;
+
+
+    void set_ground_behavior(ground_behavior_ val) {ground_behavior = val;};
+    void set_rover_mode (bool mode) {
+        rover_mode = mode;
+    }
+
 
 protected:
     SITL *sitl;
     Location home;
     Location location;
+    bool rover_mode;
 
     float ground_level;
     float home_yaw;
@@ -176,12 +190,7 @@ protected:
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
     
-    enum {
-        GROUND_BEHAVIOR_NONE = 0,
-        GROUND_BEHAVIOR_NO_MOVEMENT,
-        GROUND_BEHAVIOR_FWD_ONLY,
-        GROUND_BEHAVIOR_TAILSITTER,
-    } ground_behavior;
+    enum ground_behavior_ ground_behavior;
 
     bool use_smoothing;
 
@@ -234,6 +243,7 @@ protected:
 
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
+
     
 private:
     uint64_t last_time_us = 0;

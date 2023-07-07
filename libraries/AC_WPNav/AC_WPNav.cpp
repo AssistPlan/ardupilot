@@ -157,6 +157,8 @@ void AC_WPNav::wp_and_spline_init()
 
     // initialise yaw heading to current heading target
     _flags.wp_yaw_set = false;
+    _flags.reached_destination = false;
+
 }
 
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
@@ -455,6 +457,8 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
             }else{
                 // regular waypoints also require the copter to be within the waypoint radius
                 Vector3f dist_to_dest = (curr_pos - Vector3f(0,0,terr_offset)) - _destination;
+
+//printf("dist_to_dest.length()=%f, _wp_radius_cm=%f\n", dist_to_dest.length(), _wp_radius_cm);
                 if( dist_to_dest.length() <= _wp_radius_cm ) {
                     _flags.reached_destination = true;
                 }

@@ -37,6 +37,9 @@ public:
 
     /* update model by one time step */
     void update(const struct sitl_input &input);
+    void update_rover(const struct sitl_input &input);
+    float calc_yaw_rate(float steering, float speed);
+    float turn_circle(float steering);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -47,6 +50,13 @@ protected:
     // calculate rotational and linear accelerations
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     Frame *frame;
+
+    float max_speed;
+    float max_accel;
+    float max_wheel_turn;
+    float turning_circle;
+    float skid_turn_rate;
+
 
     // The numbers below are the pwm output channels with "0" meaning the first output (aka RC1)
     Sprayer sprayer{6, 7};
