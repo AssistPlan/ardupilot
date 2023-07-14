@@ -86,6 +86,9 @@ void Copter::auto_disarm_check()
     uint32_t tnow_ms = millis();
     uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
 
+    if((flightmode == &mode_auto) && (copter.not_dis_arm_on_land == true)) return;
+
+
     // exit immediately if we are already disarmed, or if auto
     // disarming is disabled
     if (!motors->armed() || disarm_delay_ms == 0 || control_mode == THROW) {
@@ -279,6 +282,7 @@ void Copter::init_disarm_motors()
 
     // send disarm command to motors
     motors->armed(false);
+printf("motors->armed(false)\n");
 
 #if MODE_AUTO_ENABLED == ENABLED
     // reset the mission
@@ -306,7 +310,8 @@ void Copter::motors_output()
         return;
     }
 #endif
-
+    bool done;
+    done = false;
     // Update arming delay state
     if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || control_mode == THROW)) {
         ap.in_arming_delay = false;
@@ -324,18 +329,46 @@ void Copter::motors_output()
     // check if we are performing the motor test
     if (ap.motor_test) {
         motor_test_output();
+    // check if we are tilting retruct servo.
+    } else if(is_tilting() == true) {
+        // stop propers when tilting retruct servo.
+        g2.ugv_motors.stop_properas();
     } else {
-        bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
-        if (!motors->get_interlock() && interlock) {
-            motors->set_interlock(true);
-            Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
-        } else if (motors->get_interlock() && !interlock) {
-            motors->set_interlock(false);
-            Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+        if(control_mode == ROVER_MANUAL)
+        {
+            // send output signals to motors
+            float speed;
+            g2.attitude_control_rover.get_forward_speed(speed);
+            g2.ugv_motors.output(true, speed, G_Dt);
+//printf("g2.ugv_motors.output speed=%f\n", 2.0 );
+            done = true;
+        } else if(control_mode == AUTO) {
+            int sub_mode;
+            sub_mode = ((Copter::ModeAuto *)(copter.flightmode))->mode();
+            if((Auto_WP == sub_mode) && (copter.auto_rover_mode == true))
+//            if(copter.auto_rover_mode == true)
+            {
+                float speed;
+                g2.attitude_control_rover.get_forward_speed(speed);
+                g2.ugv_motors.output(true, speed, G_Dt);
+//printf("g2.ugv_motors.output speed=%f\n", speed );
+//printf("g2.ugv_motors.output\n" );
+                done = true;
+             }
         }
-
-        // send output signals to motors
-        motors->output();
+        if(done == false)
+        {
+            bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
+            if (!motors->get_interlock() && interlock) {
+                motors->set_interlock(true);
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
+            } else if (motors->get_interlock() && !interlock) {
+                motors->set_interlock(false);
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+            }
+            // send output signals to motors
+            motors->output();
+        }
     }
 
     // push all channels

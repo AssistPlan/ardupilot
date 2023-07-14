@@ -1,0 +1,5 @@
+--- modules/mavlink
++++ modules/mavlink
+@@ -1 +1 @@
+-Subproject commit 36432124a99db4302d0518e236fae4a57499793c
++Subproject commit 36432124a99db4302d0518e236fae4a57499793c-dirty

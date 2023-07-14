@@ -52,6 +52,7 @@ void SRV_Channel::output_ch(void)
     }
     if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {
         hal.rcout->write(ch_num, output_pwm);
+//printf("hal.rcout->write ch_num=%d,output_pwm=%d\n", ch_num, output_pwm);
     }
 }
 
@@ -464,6 +465,7 @@ void SRV_Channels::set_output_scaled(SRV_Channel::Aux_servo_function_t function,
 {
     if (function < SRV_Channel::k_nr_aux_servo_functions) {
         functions[function].output_scaled = value;
+
         SRV_Channel::have_pwm_mask &= ~functions[function].channel_mask;
     }
 }

@@ -52,7 +52,6 @@ public:
     uint16_t base_port(void) const {
         return _base_port;
     }
-
     // create a file desciptor attached to a virtual device; type of
     // device is given by name parameter
     int sim_fd(const char *name, const char *arg);
@@ -202,7 +201,8 @@ private:
 
     // internal SITL model
     SITL::Aircraft *sitl_model;
-
+    //SITL::Aircraft *sitl_model_rover;
+    
     // simulated gimbal
     bool enable_gimbal;
     SITL::Gimbal *gimbal;

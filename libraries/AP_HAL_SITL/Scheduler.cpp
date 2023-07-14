@@ -44,7 +44,9 @@ bool Scheduler::in_main_thread() const
 
 void Scheduler::delay_microseconds(uint16_t usec)
 {
+
     uint64_t start = AP_HAL::micros64();
+
     do {
         uint64_t dtime = AP_HAL::micros64() - start;
         if (dtime >= usec) {

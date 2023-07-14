@@ -14,23 +14,23 @@
  */
 
 /*
- *       AP_MotorsTri.cpp - ArduCopter motors library
+ *       AP_RoverMotors.cpp - ArduCopter motors library
  *       Code by RandyMackay. DIYDrones.com
  *
  */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
-#include "AP_MotorsTri.h"
+#include "AP_RoverMotors.h"
 
 extern const AP_HAL::HAL& hal;
 
 // init
-void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_type)
+void AP_RoverMotors::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     add_motor_num(AP_MOTORS_MOT_1);
     add_motor_num(AP_MOTORS_MOT_2);
-
+    add_motor_num(AP_MOTORS_MOT_3);
     add_motor_num(AP_MOTORS_MOT_4);
     
     // set update rate for the 3 motors (but not the servo on channel 7)
@@ -39,35 +39,32 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     // set the motor_enabled flag so that the ESCs can be calibrated like other frame types
     motor_enabled[AP_MOTORS_MOT_1] = true;
     motor_enabled[AP_MOTORS_MOT_2] = true;
-//    motor_enabled[AP_MOTORS_MOT_3] = true;
+    motor_enabled[AP_MOTORS_MOT_3] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
 
     // find the yaw servo
-//    _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, AP_MOTORS_CH_TRI_YAW);
-    _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, AP_MOTORS_CH_TRI_YAW);
-    if (!_yaw_servo) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "MotorsTri: unable to setup yaw channel");
-        // don't set initialised_ok
-        return;
-    }
+    //_yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, AP_MOTORS_CH_TRI_YAW);
+    //if (!_yaw_servo) {
+    //    gcs().send_text(MAV_SEVERITY_ERROR, "RoverMotors: unable to setup yaw channel");
+    //    // don't set initialised_ok
+    //    return;
+   // }
     
     // allow mapping of motor7
-    add_motor_num(AP_MOTORS_CH_TRI_YAW);
-//    add_motor_num(AP_MOTORS_MOT_3);  // steering
-    add_motor_num(AP_MOTORS_MOT_5);  // lift up rail rotor
+    //add_motor_num(AP_MOTORS_CH_TRI_YAW);
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+void AP_RoverMotors::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TRI);
 }
 
 // set update rate to motors - a value in hertz
-void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
+void AP_RoverMotors::set_update_rate( uint16_t speed_hz )
 {
     // record requested speed
     _speed_hz = speed_hz;
@@ -76,72 +73,80 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
     uint32_t mask = 
 	    1U << AP_MOTORS_MOT_1 |
 	    1U << AP_MOTORS_MOT_2 |
-//	    1U << AP_MOTORS_MOT_3 |
+	    1U << AP_MOTORS_MOT_3 |
 	    1U << AP_MOTORS_MOT_4;
     rc_set_freq(mask, _speed_hz);
 }
 
-/*
-void AP_MotorsTri::stop_motors_1_2_7_()
+int16_t AP_RoverMotors::calc_thrust_to_pwm(float thrust_in) const
 {
-
-    rc_write(AP_MOTORS_MOT_1, get_pwm_output_min());
-    rc_write(AP_MOTORS_MOT_2, get_pwm_output_min());
-    rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
-
+    thrust_in = constrain_float(thrust_in, 0.0f, 1.0f);
+    return get_pwm_output_min() + (get_pwm_output_max()-get_pwm_output_min()) * apply_thrust_curve_and_volt_scaling(thrust_in);
 }
-*/
 
-void AP_MotorsTri::output_to_motors()
+// output - sends commands to the motors
+void AP_RoverMotors::output()
 {
+    // update throttle filter
+    //update_throttle_filter();
+
+    // calc filtered battery voltage and lift_max
+    //update_lift_max_from_batt_voltage();
+
+    // run spool logic
+    //output_logic();
+
+    // calculate thrust
+    //output_armed_stabilizing();
+
+    // apply any thrust compensation for the frame
+    //thrust_compensation();
+    
+    // convert rpy_thrust values to pwm
+    output_to_motors();
+
+    // output any booster throttle
+    //output_boost_throttle();
+};
 
 
+void AP_RoverMotors::output_to_motors()
+{
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
             rc_write(AP_MOTORS_MOT_1, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_2, get_pwm_output_min());
-//            rc_write(AP_MOTORS_MOT_3, (get_pwm_output_min() + get_pwm_output_max()) / 2);
             rc_write(AP_MOTORS_MOT_4, get_pwm_output_min());
-            //rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
-            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
-            //rc_write(AP_MOTORS_MOT_7, (get_pwm_output_min() + get_pwm_output_max()) / 2);
-
+            //rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
             rc_write(AP_MOTORS_MOT_1, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_2, calc_spin_up_to_pwm());
-//            rc_write(AP_MOTORS_MOT_3, (get_pwm_output_min() + get_pwm_output_max()) / 2);
             rc_write(AP_MOTORS_MOT_4, calc_spin_up_to_pwm());
-            //rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
-            rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
-            //rc_write(AP_MOTORS_MOT_7, (get_pwm_output_min() + get_pwm_output_max()) / 2);
+            //rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             // set motor output based on thrust requests
-            rc_write(AP_MOTORS_MOT_1, calc_thrust_to_pwm(_thrust_right));
-            rc_write(AP_MOTORS_MOT_2, calc_thrust_to_pwm(_thrust_left));
-//            rc_write(AP_MOTORS_MOT_3, (get_pwm_output_min() + get_pwm_output_max()) / 2);
+            rc_write(AP_MOTORS_MOT_3, calc_thrust_to_pwm(_thrust_staring));
             rc_write(AP_MOTORS_MOT_4, calc_thrust_to_pwm(_thrust_rear));
-//            rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
-            rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg)));
+            //rc_write(AP_MOTORS_CH_TRI_YAW, calc_yaw_radio_output(_pivot_angle, radians(_yaw_servo_angle_max_deg)));
             break;
     }
 }
 
+
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsTri::get_motor_mask()
+uint16_t AP_RoverMotors::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
     uint16_t motor_mask = (1U << AP_MOTORS_MOT_1) |
                           (1U << AP_MOTORS_MOT_2) |
-//                          (1U << AP_MOTORS_MOT_3) |
                           (1U << AP_MOTORS_MOT_4) |
-                          (1U << AP_MOTORS_MOT_5) |
                           (1U << AP_MOTORS_CH_TRI_YAW);
     uint16_t mask = rc_map_mask(motor_mask);
 
@@ -153,7 +158,7 @@ uint16_t AP_MotorsTri::get_motor_mask()
 
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
-void AP_MotorsTri::output_armed_stabilizing()
+void AP_RoverMotors::output_armed_stabilizing()
 {
     float   roll_thrust;                // roll thrust input value, +/- 1.0
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
@@ -280,7 +285,7 @@ void AP_MotorsTri::output_armed_stabilizing()
 // output_test - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
+void AP_RoverMotors::output_test(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
     if (!armed()) {
@@ -312,7 +317,7 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
 }
 
 // calc_yaw_radio_output - calculate final radio output for yaw channel
-int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max)
+int16_t AP_RoverMotors::calc_yaw_radio_output(float yaw_input, float yaw_input_max)
 {
     int16_t ret;
 
@@ -334,7 +339,7 @@ int16_t AP_MotorsTri::calc_yaw_radio_output(float yaw_input, float yaw_input_max
   vehicle specific thrust compensation for motor arrangements such as
   the forward motors tilting
 */
-void AP_MotorsTri::thrust_compensation(void)
+void AP_RoverMotors::thrust_compensation(void)
 {
     if (_thrust_compensation_callback) {
         // convert 3 thrust values into an array indexed by motor number
@@ -353,13 +358,11 @@ void AP_MotorsTri::thrust_compensation(void)
 /*
   override tricopter tail servo output in output_motor_mask
  */
-void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask)
+void AP_RoverMotors::output_motor_mask(float thrust, uint8_t mask)
 {
     // normal multicopter output
     AP_MotorsMulticopter::output_motor_mask(thrust, mask);
 
     // and override yaw servo
     rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
-
-
 }

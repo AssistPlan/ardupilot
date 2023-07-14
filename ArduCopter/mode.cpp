@@ -17,7 +17,9 @@ Copter::Mode::Mode(void) :
     inertial_nav(copter.inertial_nav),
     ahrs(copter.ahrs),
     attitude_control(copter.attitude_control),
+//    attitude_control_rover(copter.attitude_control_rover),
     motors(copter.motors),
+    rover_motors(copter.rover_motors),
     channel_roll(copter.channel_roll),
     channel_pitch(copter.channel_pitch),
     channel_throttle(copter.channel_throttle),
@@ -154,6 +156,9 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_follow;
             break;
 #endif
+        case ROVER_MANUAL:
+            ret = &mode_rover_manual;
+            break;
 
         default:
             break;
@@ -170,6 +175,7 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
 bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 {
 
+printf("Copter::set_mode mode=%d\n", mode );
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
         control_mode_reason = reason;
@@ -194,6 +200,11 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return false;
     }
 #endif
+
+    // perform any cleanup required by previous flight mode
+    //exit_mode(flightmode, new_flightmode);
+
+printf("new_flightmode->init\n");
 
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
@@ -260,6 +271,17 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
         mode_autotune.stop();
     }
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if ((new_flightmode != &mode_auto) && (new_flightmode != &mode_rover_manual)){
+        copter.sitl.set_sitl_rover_model(false);
+    }
+#endif
+
+    if ((new_flightmode != &mode_auto) && (new_flightmode != &mode_rover_manual)){
+        copter.auto_rover_mode = false;
+printf("exit_mode \n");
+        copter.set_tilt_type(TILT_TYPE_DOWN); 
+    }
 
     // stop mission when we leave auto mode
 #if MODE_AUTO_ENABLED == ENABLED

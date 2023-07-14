@@ -91,6 +91,8 @@ void SimRover::update(const struct sitl_input &input)
 {
     float steering, throttle;
 
+//printf("SimRover::update input.servos=%d,%d,%d,%d\n", input.servos[0], input.servos[1], input.servos[2], input.servos[3]);
+
     // if in skid steering mode the steering and throttle values are used for motor1 and motor2
     if (skid_steering) {
         float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
@@ -98,15 +100,20 @@ void SimRover::update(const struct sitl_input &input)
         steering = motor1 - motor2;
         throttle = 0.5*(motor1 + motor2);
     } else {
-        steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-        throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        steering = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        //throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+        throttle = 2*((input.servos[3]-1000)/1000.0f - 0.5f);
     }
+
+//printf("input.servos=%f,%f,%f,%f\n", input.servos[0], input.servos[1], input.servos[2], input.servos[3]);
 
     // how much time has passed?
     float delta_time = frame_time_us * 1.0e-6f;
 
     // speed in m/s in body frame
     Vector3f velocity_body = dcm.transposed() * velocity_ef;
+
+//printf("velocity_ef=%f,%f,%f\n", velocity_ef.x, velocity_ef.y, velocity_ef.z);
 
     // speed along x axis, +ve is forward
     float speed = velocity_body.x;
@@ -148,6 +155,8 @@ void SimRover::update(const struct sitl_input &input)
 
     // new position vector
     position += velocity_ef * delta_time;
+
+//printf("position=%f,%f\n", position.x , position.y);
 
     // update lat/lon/altitude
     update_position();

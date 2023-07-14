@@ -2,6 +2,7 @@
 
 #include <AP_Common/AP_Common.h>
 
+
 // Global parameter class.
 //
 class Parameters {
@@ -494,6 +495,7 @@ public:
     // button checking
     AP_Button button;
 
+
 #if STATS_ENABLED == ENABLED
     // vehicle statistics
     AP_Stats stats;
@@ -520,10 +522,12 @@ public:
     AP_Beacon beacon;
 #endif
 
+
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
     // Visual Odometry camera
     AP_VisualOdom visual_odom;
 #endif
+
 
 #if PROXIMITY_ENABLED == ENABLED
     // proximity (aka object avoidance) library
@@ -586,6 +590,26 @@ public:
     // follow
     AP_Follow follow;
 #endif
+    AP_Float  speed_cruise;
+    AP_Float  throttle_cruise;
+    AP_Float  waypoint_overshoot;
+    AP_Float  waypoint_radius;
+    AP_Float  turn_max_g;
+
+    AP_Float  turn_radius;
+    AP_Float  rtl_speed;
+    AP_Float  wp_speed;
+
+//    g2_rtl_speed = 1.0;
+//    g2_wp_speed = 1.0;
+//    g_speed_cruise = 1.0;
+
+
+    AP_MotorsUGV ugv_motors;
+    AR_AttitudeControl attitude_control_rover;
+    AP_L1_Control *L1_controller_ptr;
+
+
 
 };
 
