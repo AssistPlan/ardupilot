@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
+
 // Just so that it's completely clear...
 #define ENABLED                 1
 #define DISABLED                0
@@ -10,6 +11,8 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
+
+#define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {
     AUTO_YAW_HOLD =             0,  // pilot controls the heading
@@ -113,6 +116,8 @@ enum control_mode_t {
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
     FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
+    ZIGZAG    =    24,  // rover-mode manual
+    ROVER_MANUAL =    25,  // rover-mode manual
 };
 
 enum mode_reason_t {
@@ -205,6 +210,7 @@ enum AutoMode {
     Auto_NavGuided,
     Auto_Loiter,
     Auto_NavPayloadPlace,
+    Auto_ChangeBody,
 };
 
 // Guided modes

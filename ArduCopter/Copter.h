@@ -54,6 +54,7 @@
 #include <AC_PID/AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
+#include <APM_Control/AR_AttitudeControl.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
@@ -83,6 +84,12 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
+#include <AP_Navigation/AP_Navigation.h>
+#include <AP_L1_Control/AP_L1_Control.h>
+#include "AP_MotorsUGV.h"
+
+
+#include <AP_Motors/AP_RoverMotors.h>          // AP Motors library
 
 // Configuration
 #include "defines.h"
@@ -180,6 +187,8 @@
 #endif
 
 
+
+
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;
@@ -200,6 +209,18 @@ public:
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+
+    void set_not_dis_arm_on_land(bool val){not_dis_arm_on_land = val;}
+    bool not_dis_arm_on_land;
+    enum TILT_TYPE{
+        TILT_TYPE_DISABLE = 0,
+        TILT_TYPE_UP = 1,
+        TILT_TYPE_DOWN = 2,
+    } ;
+
+    void set_tilt_type(TILT_TYPE type);
+
+    bool is_tilting();
 
 private:
     static const AP_FWVersion fwver;
@@ -252,6 +273,19 @@ private:
     AP_RPM rpm_sensor;
 #endif
 
+    // tiltrotor control variables
+    struct {
+        TILT_TYPE tilt_type; // 0 : disable ,1 : up ,2 : down
+        int8_t max_rate_up_dps;
+        int8_t max_rate_down_dps;
+        int8_t  max_angle_deg;
+        int8_t  min_angle_deg;
+        int8_t current_tilt;
+    } tilt = {TILT_TYPE_DISABLE, 9, 9, 90, 0, 0};
+    void tiltrotor_slew(int8_t newtilt);
+    void update_tilt();
+    
+
     // Inertial Navigation EKF
     NavEKF2 EKF2{&ahrs, rangefinder};
     NavEKF3 EKF3{&ahrs, rangefinder};
@@ -260,6 +294,11 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
 #endif
+
+    AP_L1_Control L1_controller{ahrs, nullptr};
+
+    // selected navigation controller
+    AP_Navigation *nav_controller;
 
     // Mission library
 #if MODE_AUTO_ENABLED == ENABLED
@@ -416,6 +455,12 @@ private:
 #endif
 
     MOTOR_CLASS *motors;
+    AP_RoverMotors *rover_motors;
+    // Motor library
+    //AP_MotorsUGV *ugv_motors; 
+    bool auto_rover_mode;
+
+    
     const struct AP_Param::GroupInfo *motors_var_info;
 
     // GPS variables
@@ -489,8 +534,10 @@ private:
     #define AC_AttitudeControl_t AC_AttitudeControl_Heli
 #else
     #define AC_AttitudeControl_t AC_AttitudeControl_Multi
+    #define AC_AttitudeControlRover_t AR_AttitudeControl
 #endif
     AC_AttitudeControl_t *attitude_control;
+//    AC_AttitudeControlRover_t *attitude_control_rover;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
@@ -1009,6 +1056,8 @@ private:
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ModeFlowHold mode_flowhold;
 #endif
+
+    ModeRoverManual mode_rover_manual;
 
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);

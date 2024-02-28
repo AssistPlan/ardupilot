@@ -800,7 +800,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_OSD/AP_OSD.cpp
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
-    
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -974,6 +974,19 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LAND_ALT_LOW", 25, ParametersG2, land_alt_low, 1000),
 
+
+
+    // @Param: CRUISE_SPEED
+    // @DisplayName: Target cruise speed in auto modes
+    // @Description: The target speed in auto missions.
+    // @Units: m/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("CRUISE_SPEED", 28, ParametersG2, speed_cruise, 2),
+
+
+
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     // @Group: FHLD
     // @Path: mode_flowhold.cpp
@@ -985,6 +998,84 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
 #endif
+
+
+    // @Param: CRUISE_THROTTLE
+    // @DisplayName: Base throttle percentage in auto
+    // @Description: The base throttle percentage to use in auto mode. The CRUISE_SPEED parameter controls the target speed, but the rover starts with the CRUISE_THROTTLE setting as the initial estimate for how much throttle is needed to achieve that speed. It then adjusts the throttle based on how fast the rover is actually going.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("CRUISE_THROTTLE", 29, ParametersG2, throttle_cruise, 50),
+
+    // @Param: WP_OVERSHOOT
+    // @DisplayName: Waypoint overshoot maximum
+    // @Description: Waypoint overshoot maximum in meters.  The vehicle will attempt to stay within this many meters of the track as it completes one waypoint and moves to the next.
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("WP_OVERSHOOT", 30, ParametersG2, waypoint_overshoot, 2.0f),
+
+// @Param: TURN_MAX_G
+    // @DisplayName: Turning maximum G force
+    // @Description: The maximum turning acceleration (in units of gravities) that the rover can handle while remaining stable. The navigation code will keep the lateral acceleration below this level to avoid rolling over or slipping the wheels in turns
+    // @Units: gravities
+    // @Range: 0.1 10
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("TURN_MAX_G", 31, ParametersG2, turn_max_g, 0.6f),
+
+
+    // @Param: TURN_RADIUS
+    // @DisplayName: Turn radius of vehicle
+    // @Description: Turn radius of vehicle in meters while at low speeds.  Lower values produce tighter turns in steering mode
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TURN_RADIUS", 32, ParametersG2, turn_radius, 0.9),
+
+    // @Param: RTL_SPEED
+    // @DisplayName: Turn radius of vehicle
+    // @Description: Turn radius of vehicle in meters while at low speeds.  Lower values produce tighter turns in steering mode
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("RTL_SPEED", 33, ParametersG2, rtl_speed, 0.9),
+
+    // @Param: WP_SPEED
+    // @DisplayName: Turn radius of vehicle
+    // @Description: Turn radius of vehicle in meters while at low speeds.  Lower values produce tighter turns in steering mode
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("WP_SPEED", 34, ParametersG2, wp_speed, 0.9),
+
+    // @Group: UGV_
+    // @Path: AP_MotorsUGV.cpp
+    AP_SUBGROUPINFO(ugv_motors, "UGV_", 35, ParametersG2, AP_MotorsUGV),
+
+    // @Group: ARC_
+    // @Path: ../libraries/APM_Control/AR_AttitudeControl.cpp
+    AP_SUBGROUPINFO(attitude_control_rover, "ACR", 36, ParametersG2, AR_AttitudeControl),
+
+    // @Group: FHLD
+    // @Path: mode_flowhold.cpp
+    AP_SUBGROUPPTR(L1_controller_ptr, "L1_", 37, ParametersG2, AP_L1_Control),
+
+    // @Param: WP_RADIUS
+    // @DisplayName: Waypoint radius
+    // @Description: The distance in meters from a waypoint when we consider the waypoint has been reached. This determines when the rover will turn along the next waypoint path.
+    // @Units: m
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("WP_RADIUS", 38, ParametersG2, waypoint_radius, 2.0),
+
 
     AP_GROUPEND
 };
@@ -1013,6 +1104,10 @@ ParametersG2::ParametersG2(void)
 #if MODE_FOLLOW_ENABLED == ENABLED
     ,follow()
 #endif
+    ,ugv_motors()
+    ,attitude_control_rover(copter.ahrs)
+    ,L1_controller_ptr(&copter.L1_controller)
+
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -1025,7 +1120,7 @@ ParametersG2::ParametersG2(void)
   value.
 
   Note that this works even if the old parameter has been removed. It
-  relies on the old k_param index not being removed
+  relies on the old k_param index not beng removed
 
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.

@@ -23,6 +23,8 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
+    set_not_dis_arm_on_land(false);
+
     // init vehicle capabilties
     init_capabilities();
 
@@ -285,6 +287,10 @@ void Copter::init_ardupilot()
     
     hal.console->printf("\nReady to FLY ");
 
+    copter.g2.ugv_motors.init();
+    copter.g2.ugv_motors.stop_properas();
+
+
     // flag that initialisation has completed
     ap.initialised = true;
 }
@@ -510,6 +516,9 @@ const char* Copter::get_frame_string()
  */
 void Copter::allocate_motors(void)
 {
+
+printf("g2.frame_class.get()=[%d]\n", g2.frame_class.get());
+
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
 #if FRAME_CONFIG != HELI_FRAME
         case AP_Motors::MOTOR_FRAME_QUAD:
@@ -521,11 +530,15 @@ void Copter::allocate_motors(void)
         default:
             motors = new AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix::var_info;
+            rover_motors = new AP_RoverMotors(copter.scheduler.get_loop_rate_hz());
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = new AP_MotorsTri(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
+            rover_motors = new AP_RoverMotors(copter.scheduler.get_loop_rate_hz());
+            //ugv_motors = new AP_MotorsUGV();
+
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = new AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());

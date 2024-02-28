@@ -5,6 +5,8 @@
 void Copter::gcs_send_heartbeat(void)
 {
     gcs().send_message(MSG_HEARTBEAT);
+//printf("gcs_send_heartbeat\n");
+
 }
 
 void Copter::gcs_send_deferred(void)
@@ -713,6 +715,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_command_int_t packet;
         mavlink_msg_command_int_decode(msg, &packet);
+printf("ID_COMMAND_INT packet.command=[%d]\n", packet.command);
         switch(packet.command)
         {
             case MAV_CMD_DO_FOLLOW:
@@ -805,6 +808,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // decode packet
         mavlink_command_long_t packet;
         mavlink_msg_command_long_decode(msg, &packet);
+printf("MAVLINK_MSG_ID_COMMAND_LONG packet.command=[%d]\n", packet.command);
 
         switch(packet.command) {
 
@@ -843,7 +847,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
-
         case MAV_CMD_DO_FOLLOW:
 #if MODE_FOLLOW_ENABLED == ENABLED
             // param1: sysid of target to follow

@@ -412,12 +412,77 @@ void Copter::three_hz_loop()
     tuning();
 }
 
+/*
+  output a slew limited tiltrotor angle. tilt is from 0 to 1
+ */
+void Copter::tiltrotor_slew(int8_t newtilt)
+{
+    
+    if(tilt.current_tilt < newtilt)
+    {
+        tilt.current_tilt = tilt.current_tilt + tilt.max_rate_up_dps;
+    } else if (tilt.current_tilt > newtilt) {
+        tilt.current_tilt = tilt.current_tilt - tilt.max_rate_down_dps;
+//printf("tilt.current_tilt=[%d], tilt.max_rate_down_dps=[%d]\n", tilt.current_tilt, tilt.max_rate_down_dps);
+    }
+
+    tilt.current_tilt = constrain_float(tilt.current_tilt, tilt.min_angle_deg, tilt.max_angle_deg);
+
+    // translate to 1000..2000 range and output
+    SRV_Channels::set_output_pwm(SRV_Channel::k_motor5, 1000.0 + 1000.0 * (tilt.current_tilt / 90.0));
+
+//printf("tilt.current_tilt= [%d][%d]\n" , tilt.current_tilt, newtilt );
+
+}
+
+// is tilting retruct servo?  
+bool Copter::is_tilting()
+{
+
+
+    if(tilt.tilt_type == TILT_TYPE_UP) {
+        if(tilt.current_tilt != tilt.max_angle_deg)
+        {
+            return true;
+        }
+    } else if (tilt.tilt_type == TILT_TYPE_DOWN) {
+        if(tilt.current_tilt != tilt.min_angle_deg)
+        {
+            return true;
+        }
+
+    }
+    return false;
+}
+void Copter::set_tilt_type(TILT_TYPE type)
+{
+    if(  tilt.tilt_type != type) {
+        tilt.tilt_type = type;
+        update_tilt();
+    }
+}
+
+// update tilting retruct servo.
+void Copter::update_tilt()
+{
+
+
+    if(tilt.tilt_type == TILT_TYPE_UP) {
+        tiltrotor_slew(tilt.max_angle_deg);
+    } else if (tilt.tilt_type == TILT_TYPE_DOWN) {
+        tiltrotor_slew(tilt.min_angle_deg);
+    }
+}
+
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }
+
+    // call tilting retruct servo oupdate.
+    update_tilt();
 
     arming.update();
 
