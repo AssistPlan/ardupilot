@@ -420,9 +420,13 @@ void Copter::tiltrotor_slew(int8_t newtilt)
     
     if(tilt.current_tilt < newtilt)
     {
-        tilt.current_tilt = tilt.current_tilt + tilt.max_rate_up_dps;
+        //少しづつ変更するのではなく、一気に変更する様に修正
+        //tilt.current_tilt = tilt.current_tilt + tilt.max_rate_up_dps;
+        tilt.current_tilt = tilt.max_angle_deg;
     } else if (tilt.current_tilt > newtilt) {
-        tilt.current_tilt = tilt.current_tilt - tilt.max_rate_down_dps;
+        //少しづつ変更するのではなく、一気に変更する様に修正
+        //tilt.current_tilt = tilt.current_tilt - tilt.max_rate_down_dps;
+        tilt.current_tilt = tilt.min_angle_deg;
 //printf("tilt.current_tilt=[%d], tilt.max_rate_down_dps=[%d]\n", tilt.current_tilt, tilt.max_rate_down_dps);
     }
 
