@@ -118,6 +118,7 @@ void SRV_Channel::calc_pwm(int16_t output_scaled)
     } else {
         pwm = pwm_from_range(output_scaled);
     }
+//printf("SRV_Channel::calc_pwm ch_num=%d, output_scaled=%d, pwm=%d\n",ch_num, output_scaled, pwm);
     set_output_pwm(pwm);
 }
 

@@ -53,15 +53,19 @@ void Copter::init_rc_out()
 {
     motors->set_loop_rate(scheduler.get_loop_rate_hz());
     motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
+    rover_motors->set_loop_rate(scheduler.get_loop_rate_hz());
+    rover_motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 
     // enable aux servos to cope with multiple output channels per motor
     SRV_Channels::enable_aux_servos();
 
     // update rate must be set after motors->init() to allow for motor mapping
     motors->set_update_rate(g.rc_speed);
+    rover_motors->set_update_rate(g.rc_speed);
 
 #if FRAME_CONFIG != HELI_FRAME
     motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
+    rover_motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #else
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed.
@@ -87,8 +91,17 @@ void Copter::init_rc_out()
 // enable_motor_output() - enable and output lowest possible value to motors
 void Copter::enable_motor_output()
 {
+
+printf("enable_motor_output control_mode= %d\n", control_mode);
     // enable motors
-    motors->output_min();
+    if(control_mode == ROVER_MANUAL)
+    {
+printf("enable_motor_output ROVER_MANUAL\n");
+        copter.g2.ugv_motors.stop_properas();
+    } else {
+printf("enable_motor_output NOT ROVER_MANUAL\n");
+        motors->output_min();
+    }
 }
 
 void Copter::read_radio()

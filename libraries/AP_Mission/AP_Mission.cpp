@@ -85,11 +85,15 @@ void AP_Mission::stop()
 ///     previous running commands will be re-initialized
 void AP_Mission::resume()
 {
+
+
+
     // if mission had completed then start it from the first command
     if (_flags.state == MISSION_COMPLETE) {
         start();
         return;
     }
+
 
     // if mission had stopped then restart it
     if (_flags.state == MISSION_STOPPED) {
@@ -111,6 +115,7 @@ void AP_Mission::resume()
         return;
     }
 
+
     // restart active navigation command. We run these on resume()
     // regardless of whether the mission was stopped, as we may be
     // re-entering AUTO mode and the nav_cmd callback needs to be run
@@ -126,6 +131,99 @@ void AP_Mission::resume()
     if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
         _cmd_start_fn(_do_cmd);
     }
+}
+
+
+bool AP_Mission::get_nav_rover_mode()
+{
+    bool rover_mode;
+    Mission_Command cmd = {};
+    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+    }
+
+    rover_mode = false;
+    for (uint8_t i=0; i < cmd_index; i++) {
+        if (get_next_nav_cmd(i, cmd)) {
+           
+        
+            switch (cmd.id) {
+            // any of these are considered a takeoff command:
+            case MAV_CMD_NAV_MODE_ROVER:
+                rover_mode = true;
+                break;
+            case MAV_CMD_NAV_MODE_COPTER:
+                rover_mode = false;
+                break;
+            }
+        }
+    }
+    return rover_mode;
+
+}
+
+
+/// check mission starts with a takeoff command
+bool AP_Mission::starts_with_takeoff_or_mode_rover_cmd()
+{
+
+
+   // int wk_index;
+    Mission_Command cmd = {};
+    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+    }
+
+
+    //wk_index = cmd_index;
+    // check a maximum of 16 items, remembering that missions can have
+    // loops in them
+    if(cmd_index == AP_MISSION_FIRST_REAL_COMMAND)
+    {
+        for (uint8_t i=0; i<16; i++, cmd_index++) {
+            if (!get_next_nav_cmd(cmd_index, cmd)) {
+                break;
+            }
+            switch (cmd.id) {
+            // any of these are considered a takeoff command:
+            case MAV_CMD_NAV_MODE_ROVER:
+            case MAV_CMD_NAV_TAKEOFF:
+            case MAV_CMD_NAV_TAKEOFF_LOCAL:
+                return true;
+        // any of these are considered "skippable" when determining if
+        // we "start with a takeoff command"
+            case MAV_CMD_NAV_DELAY:
+                continue;
+            default:
+                break;
+            }
+        }
+    } else {
+        if (!get_next_nav_cmd(cmd_index, cmd)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+/*
+    cmd_index = wk_index;
+
+    for (uint8_t i=0; i<16; i++, cmd_index++) {
+        if (!get_next_do_cmd(cmd_index, cmd)) {
+            break;
+        }
+printf("cmd.id=%d\n", cmd.id);
+        switch (cmd.id) {
+        // any of these are considered a takeoff command:
+        case MAV_CMD_NAV_MODE_ROVER:
+            return true;
+        }
+    }
+*/
+
+    return false;
 }
 
 /// check mission starts with a takeoff command
@@ -172,6 +270,8 @@ void AP_Mission::start_or_resume()
 /// reset - reset mission to the first command
 void AP_Mission::reset()
 {
+
+
     _flags.nav_cmd_loaded  = false;
     _flags.do_cmd_loaded   = false;
     _flags.do_cmd_all_done = false;
@@ -192,6 +292,7 @@ bool AP_Mission::clear()
         return false;
     }
 
+
     // remove all commands
     _cmd_total.set_and_save(0);
 
@@ -200,6 +301,7 @@ bool AP_Mission::clear()
     _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
+
 
     // return success
     return true;
@@ -297,7 +399,10 @@ bool AP_Mission::replace_cmd(uint16_t index, Mission_Command& cmd)
 bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 {
     // NAV commands all have ids below MAV_CMD_NAV_LAST except NAV_SET_YAW_SPEED
-    return (cmd.id <= MAV_CMD_NAV_LAST || cmd.id == MAV_CMD_NAV_SET_YAW_SPEED);
+    return (cmd.id <= MAV_CMD_NAV_LAST || 
+            cmd.id == MAV_CMD_NAV_SET_YAW_SPEED ||
+            cmd.id == MAV_CMD_NAV_MODE_ROVER || 
+            cmd.id == MAV_CMD_NAV_MODE_COPTER );
 }
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
@@ -350,6 +455,8 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 bool AP_Mission::set_current_cmd(uint16_t index)
 {
     Mission_Command cmd;
+
+//printf("set_current_cmd=[%d]\n", index);
 
     // sanity check index and that we have a mission
     if (index >= (unsigned)_cmd_total || _cmd_total == 1) {
@@ -559,6 +666,13 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
         case MAV_CMD_NAV_VTOL_LAND:
             nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
             break;
+        case MAV_CMD_NAV_MODE_ROVER:
+            nan_mask = ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3)); // param 3 and 4 can be nan
+            break;
+        case MAV_CMD_NAV_MODE_COPTER:
+            nan_mask = ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3)); // param 3 and 4 can be nan
+            break;
+
         default:
             nan_mask = 0xff;
             break;
@@ -664,6 +778,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // abort target altitude(m)  (plane only)
         cmd.content.location.flags.loiter_ccw = is_negative(packet.param4); // yaw direction, (plane deepstall only)
         break;
+    case MAV_CMD_NAV_MODE_ROVER:
+        break;
+    case MAV_CMD_NAV_MODE_COPTER:
+        break;
+
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
         copy_location = true;                           // only altitude is used
@@ -1118,6 +1237,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;                        // abort target altitude(m)  (plane only)
         packet.param4 = cmd.content.location.flags.loiter_ccw ? -1 : 1; // yaw direction, (plane deepstall only)
         break;
+    case MAV_CMD_NAV_MODE_ROVER:
+        break;
+    case MAV_CMD_NAV_MODE_COPTER:
+        break;
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
         copy_location = true;                           // only altitude is used
@@ -1411,6 +1534,9 @@ bool AP_Mission::advance_current_nav_cmd()
 
     // get starting point for search
     cmd_index = _nav_cmd.index;
+
+//printf("advance_current_nav_cmd starting index =[%d]\n", cmd_index);
+
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         // start from beginning of the mission command list
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
@@ -1526,7 +1652,6 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
             // this should never happen because of check above but just in case
             return false;
         }
-
         // check for do-jump command
         if (temp_cmd.id == MAV_CMD_DO_JUMP) {
 

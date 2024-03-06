@@ -339,6 +339,11 @@ public:
     /// stop - stops mission execution.  subsequent calls to update() will have no effect until the mission is started or resumed
     void stop();
 
+    uint16_t get_nv_cmd_index()
+    {
+        return _nav_cmd.index;
+    }
+
     /// resume - continues the mission execution from where we last left off
     ///     previous running commands will be re-initialised
     void resume();
@@ -348,6 +353,10 @@ public:
 
     /// check mission starts with a takeoff command
     bool starts_with_takeoff_cmd();
+
+    bool starts_with_takeoff_or_mode_rover_cmd();
+
+    bool get_nav_rover_mode();
 
     /// reset - reset mission to the first command
     void reset();

@@ -188,7 +188,13 @@ public:
     AP_Float temp_flight;
     AP_Float temp_tconst;
     AP_Float temp_baro_factor;
-    
+    bool rover_mode;
+    void set_sitl_rover_model(bool mode)
+    {
+        rover_mode = mode;
+    }
+
+ 
     // differential pressure sensor tube order
     AP_Int8 arspd_signflip;
 

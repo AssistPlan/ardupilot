@@ -125,13 +125,16 @@ protected:
     AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AC_AttitudeControl_t *&attitude_control;
+//    AC_AttitudeControlRover_t *&attitude_control_rover;
     MOTOR_CLASS *&motors;
+    AP_RoverMotors *&rover_motors;
     RC_Channel *&channel_roll;
     RC_Channel *&channel_pitch;
     RC_Channel *&channel_throttle;
     RC_Channel *&channel_yaw;
     float &G_Dt;
     ap_t &ap;
+    //bool rover_mode;
 
     // auto-takeoff support; takeoff state is shared across all mode instances
     class _TakeOff {
@@ -270,7 +273,7 @@ public:
     bool is_autopilot() const override { return true; }
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(bool from_gcs) const override { return true; };
     bool in_guided_mode() const { return mode() == Auto_NavGuided; }
 
     // Auto
@@ -305,8 +308,31 @@ public:
     // for GCS_MAVLink to call:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
 
+
+    // rover
+    void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed);
+    void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed);
+    void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled);
+    float get_speed_default(bool rtl) const;
+    void set_desired_speed_to_default(bool rtl);
+    float calc_reduced_speed_for_turn_or_distance(float desired_speed);
+    bool get_location(const Vector3f& offset, Location& location);
+//    void set_disarm_on_land(bool val){dis_arm_on_land = val;}
+
+    float _desired_speed;
+    float _desired_speed_final;
+    float _distance_to_destination;
+    bool _reached_destination;
+    struct Location _origin;
+    struct Location _destination;
+    bool _reversed;
+    bool is_boat;
+//    bool dis_arm_on_land;
+
+
 protected:
 
+    
     const char *name() const override { return "AUTO"; }
     const char *name4() const override { return "AUTO"; }
 
@@ -322,6 +348,10 @@ private:
 
     void takeoff_run();
     void wp_run();
+    void wp_stop();
+    void wp_rover_run();
+    void wp_rover_stop();
+
     void spline_run();
     void land_run();
     void rtl_run();
@@ -341,6 +371,8 @@ private:
     Location_Class terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
+    void do_mode_rover(const AP_Mission::Mission_Command& cmd);
+    void do_mode_copter(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_land(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
@@ -391,6 +423,8 @@ private:
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_mode_rover(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_mode_copter(const AP_Mission::Mission_Command& cmd);
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
@@ -1238,4 +1272,28 @@ protected:
     bool get_wp(Location_Class &loc) override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
+};
+
+class ModeRoverManual : public Mode {
+
+public:
+
+    // inherit constructor
+    using Copter::Mode::Mode;
+
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+
+    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
+
+protected:
+
+    const char *name() const override { return "ROVER-MANUAL"; }
+    const char *name4() const override { return "FOMA"; }
 };
